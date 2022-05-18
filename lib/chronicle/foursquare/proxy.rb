@@ -9,13 +9,13 @@ module Chronicle
         @access_token = access_token
       end
 
-      def load_visits(since: nil, limit: nil)
+      def load_checkins(since: nil, limit: nil)
         has_more = true
         visits = []
         count = 0
 
         while has_more
-          results = load_checkins(limit: 50, offset: count, since: since)
+          results = load_checkin_page(limit: 50, offset: count, since: since)
           results = results.first(limit - count) if limit
           visits += results
 
@@ -29,7 +29,7 @@ module Chronicle
         load_endpoint('users/self')[:response][:user]
       end
 
-      def load_checkins(limit: 50, offset: 0, since: nil)
+      def load_checkin_page(limit: 50, offset: 0, since: nil)
         params = {
           limit: limit,
           offset: offset,

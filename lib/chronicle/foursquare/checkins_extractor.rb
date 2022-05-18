@@ -1,9 +1,9 @@
 module Chronicle
   module Foursquare
-    class VisitsExtractor < Chronicle::ETL::Extractor
+    class CheckinsExtractor < Chronicle::ETL::Extractor
       register_connector do |r|
         r.provider = 'foursquare'
-        r.description = 'visits'
+        r.description = 'checkins'
       end
 
       setting :access_token, required: true
@@ -13,23 +13,23 @@ module Chronicle
 
         @proxy = Chronicle::Foursquare::Proxy.new(access_token: @config.access_token)
         @actor = load_actor
-        @visits = load_visits
+        @checkins = load_checkins
       end
 
       def results_count
-        @visits.count
+        @checkins.count
       end
 
       def extract
-        @visits.each do |visit|
-          yield Chronicle::ETL::Extraction.new(data: visit, meta: { actor: @actor})
+        @checkins.each do |checkin|
+          yield Chronicle::ETL::Extraction.new(data: checkin, meta: { actor: @actor})
         end
       end
 
       private
 
-      def load_visits
-        @proxy.load_visits(limit: @config.limit, since: @config.since)
+      def load_checkins
+        @proxy.load_checkins(limit: @config.limit, since: @config.since)
       end
 
       def load_actor
