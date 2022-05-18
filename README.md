@@ -45,7 +45,7 @@ $ chronicle-etl --extractor foursquare --since 1w --transformer foursquare --loa
 
 ### Extractors
 
-#### `visits`
+#### `checkins`
 
 Extractor for your Foursquare (via the Swarm app) checkins
 
