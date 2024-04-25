@@ -3,9 +3,9 @@ require 'faraday'
 module Chronicle
   module Foursquare
     class Proxy
-      API_VERSION = 20170310
+      API_VERSION = 20_170_310
 
-      def initialize(access_token: )
+      def initialize(access_token:)
         @access_token = access_token
       end
 
@@ -39,7 +39,7 @@ module Chronicle
         load_endpoint('users/self/checkins', params)[:response][:checkins][:items]
       end
 
-      def load_endpoint(endpoint, params={})
+      def load_endpoint(endpoint, params = {})
         params = params.merge({
           oauth_token: @access_token,
           v: API_VERSION

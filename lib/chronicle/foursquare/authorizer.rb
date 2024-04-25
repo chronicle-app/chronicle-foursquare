@@ -5,12 +5,12 @@ module Chronicle
     class Authorizer < Chronicle::ETL::OauthAuthorizer
       provider :foursquare
       omniauth_strategy :foursquare
-      pluck_secrets({ 
-        access_token: [:credentials, :token],
+      pluck_secrets({
+        access_token: %i[credentials token],
         uid: [:uid],
-        first_name: [:info, :first_name],
-        last_name: [:info, :last_name],
-        email: [:info, :email],
+        first_name: %i[info first_name],
+        last_name: %i[info last_name],
+        email: %i[info email]
       })
     end
   end

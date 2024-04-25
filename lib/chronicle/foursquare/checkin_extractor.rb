@@ -1,15 +1,17 @@
 module Chronicle
   module Foursquare
-    class CheckinsExtractor < Chronicle::ETL::Extractor
+    class CheckinExtractor < Chronicle::ETL::Extractor
       register_connector do |r|
-        r.provider = 'foursquare'
-        r.description = 'checkins'
+        r.source = :foursquare
+        r.type = :checkin
+        r.strategy = :api
+        r.description = 'foursquare checkin'
       end
 
       setting :access_token, required: true
 
       def prepare
-        raise(Chronicle::ETL::ExtractionError, "Access token is missing") if @config.access_token.empty?
+        raise(Chronicle::ETL::ExtractionError, 'Access token is missing') if @config.access_token.empty?
 
         @proxy = Chronicle::Foursquare::Proxy.new(access_token: @config.access_token)
         @actor = load_actor
@@ -22,7 +24,7 @@ module Chronicle
 
       def extract
         @checkins.each do |checkin|
-          yield Chronicle::ETL::Extraction.new(data: checkin, meta: { actor: @actor})
+          yield build_extraction(data: checkin, meta: { actor: @actor })
         end
       end
 

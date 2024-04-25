@@ -28,7 +28,7 @@ $ chronicle-etl secrets:set foursquare client_secret
 Next, we need an access token for accessing your data. We can use the authorization flow:
 
 ```sh
-$ chronicle-etl authorizations:new foursquare
+$ chronicle-etl authorizations:foursquare
 ```
 
 This will open a browser window to authorize on foursquare.com. When the flow is complete, access/refresh tokens will be saved in the chronicle secret system under the "foursquare" namespace. It'll be available automatically whenever you use this plugin.
@@ -37,23 +37,21 @@ This will open a browser window to authorize on foursquare.com. When the flow is
 ```sh
 # Extract recent checkins
 $ chronicle-etl --extractor foursquare --since 1w
+
 # Transform as Chronicle Schema
-$ chronicle-etl --extractor foursquare --since 1w --transformer foursquare --loader json
+$ chronicle-etl --extractor foursquare --since 1w --schema chronicle
+
+# Get a table of dates and place name
+$ chronicle-etl --extractor foursquare --since 1w --schema chronicle --fields end_time object.name --loader table
 ```
 
 ## Available Connectors
 
 ### Extractors
 
-#### `checkins`
+#### `checkin`
 
 Extractor for your Foursquare (via the Swarm app) checkins
 
 ##### Settings
 - `access_token`: (required) API access token for foursquare. By default, it's loaded from secrets under the `foursquare` namespace. You can check if it's available with `chronicle-etl secrets:list foursquare`
-
-### Transformers
-
-#### `visit`
-
-Transform a visit into Chronicle Schema

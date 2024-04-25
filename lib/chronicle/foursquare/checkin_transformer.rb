@@ -2,84 +2,79 @@ module Chronicle
   module Foursquare
     class CheckinTransformer < Chronicle::ETL::Transformer
       register_connector do |r|
-        r.provider = 'foursquare'
-        r.description = 'foursquare checkin'
-        r.identifier = 'checkin'
+        r.source = :foursquare
+        r.type = :checkin
+        r.strategy = :api
+        r.description = 'a checkin'
+        r.from_schema = :extraction
+        r.to_schema = :chronicle
       end
 
-      def transform
-        build_checkin
-      end
-
-      def timestamp
-        Time.at(checkin[:createdAt])
-      end
-
-      def id
-        checkin[:id]
+      def transform(record)
+        checkin = record.data
+        actor = record.extraction.meta[:actor]
+        build_checkin(checkin, actor)
       end
 
       private
 
-      def build_checkin
-        record = ::Chronicle::ETL::Models::Activity.new
-        record.provider = 'foursquare'
-        record.end_at = timestamp
-        record.provider_id = id
-        record.lat = checkin[:venue][:location][:lat]
-        record.lng = checkin[:venue][:location][:lng]
-        record.dedupe_on << ['provider', 'provider_id', 'verb']
-        record.involved = build_venue
-        record.actor = build_actor
-        record
+      def build_checkin(checkin, actor)
+        Chronicle::Models::CheckInAction.new do |r|
+          r.source = 'foursquare'
+          r.end_time = Time.at(checkin[:createdAt])
+          r.agent = build_agent(actor)
+          r.object = build_venue(checkin)
+        end
       end
 
-      def build_venue
-        record = ::Chronicle::ETL::Models::Entity.new
-        record.provider = 'foursquare'
-        record.provider = checkin[:venue][:id]
-        record.represents = 'venue'
-        record.title = checkin[:venue][:name]
-        record.provider_id = checkin[:venue][:id]
-        record.lat = checkin[:venue][:location][:lat]
-        record.lng = checkin[:venue][:location][:lng]
-        record.dedupe_on << ['provider', 'provider_id', 'represents']
-        record.abouts = checkin[:venue][:categories].map{|category| build_category(category)}
-        record
+      def build_venue(checkin)
+        venue = checkin[:venue]
+        location = venue[:location]
+
+        # TODO: represent categories (https://github.com/chronicle-app/chronicle-core/issues/10)
+
+        Chronicle::Models::Place.new do |r|
+          r.source = 'foursquare'
+          r.name = venue[:name]
+          r.latitude = location[:lat]
+          r.longitude = location[:lng]
+          r.source_id = venue[:id]
+
+          r.address = Chronicle::Models::PostalAddress.new do |a|
+            a.description = location&.dig(:formattedAddress)&.join(', ')
+            a.address_country = location[:country]
+            a.address_locality = location[:city]
+            a.address_region = location[:state]
+            a.postal_code = location[:postalCode]
+            a.street_address = location[:address]
+          end
+
+          r.dedupe_on = [%i[source source_id type]]
+        end
       end
 
-      def build_actor
-        record = ::Chronicle::ETL::Models::Entity.new
-        record.provider = 'foursquare'
-        record.represents = 'identity'
-        record.title = "#{actor[:firstName]} #{actor[:lastName]}"
-        record.provider_id = actor[:id]
-        record.provider_url = actor[:canonicalUrl]
-        record.dedupe_on << ['provider_url']
-        record.dedupe_on << ['provider', 'provider_id', 'represents']
-        record.attachments = [::Chronicle::ETL::Models::Attachment.new({
-          url_original: actor[:photo][:prefix] + "260x260" + actor[:photo][:suffix]
-        })]
-        record
+      def build_agent(actor)
+        image_url = "#{actor[:photo][:prefix]}260x260#{actor[:photo][:suffix]}"
+        name = "#{actor[:firstName]} #{actor[:lastName]}"
+
+        Chronicle::Models::Person.new do |r|
+          r.source = 'foursquare'
+          r.name = name
+          r.image = image_url
+          r.source_id = actor[:id]
+          r.url = actor[:canonicalUrl]
+        end
       end
 
-      def build_category(category)
-        record = ::Chronicle::ETL::Models::Entity.new
-        record.provider = 'foursquare'
-        record.provider_id = category[:id]
-        record.represents = 'topic'
-        record.title = category[:name]
-        record.dedupe_on << ['provider', 'provider_id', 'represents']
-        record
-      end
-
-      def checkin
-        @checkin ||= @extraction.data
-      end
-
-      def actor
-        @actor ||= @extraction.meta[:actor]
-      end
+      # def build_category(category)
+      #   record = ::Chronicle::ETL::Models::Entity.new
+      #   record.provider = 'foursquare'
+      #   record.provider_id = category[:id]
+      #   record.represents = 'topic'
+      #   record.title = category[:name]
+      #   record.dedupe_on << ['provider', 'provider_id', 'represents']
+      #   record
+      # end
     end
   end
 end
